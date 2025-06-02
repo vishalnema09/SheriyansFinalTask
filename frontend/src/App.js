@@ -11,6 +11,7 @@ function App() {
   const [compressedUrl, setCompressedUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [downloading, setDownloading] = useState(false);
 
   const onDrop = (acceptedFiles) => {
     if (acceptedFiles.length) {
@@ -47,6 +48,25 @@ function App() {
       setError('Upload or compression failed.');
     }
     setLoading(false);
+  };
+
+  const handleDownloadCompressed = async () => {
+    if (!compressedUrl) return;
+    setDownloading(true);
+    try {
+      const response = await axios.get(compressedUrl, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', compressedUrl.split('/').pop());
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError('Download failed.');
+    }
+    setDownloading(false);
   };
 
   return (
@@ -86,8 +106,14 @@ function App() {
           Compress Image
         </Button>
         {compressedUrl && (
-          <Button variant="outlined" sx={{ ml: 2 }} href={compressedUrl} download target="_blank">
-            Download Compressed
+          <Button
+            variant="outlined"
+            sx={{ ml: 2 }}
+            onClick={handleDownloadCompressed}
+            disabled={downloading}
+            startIcon={downloading ? <CircularProgress size={20} /> : null}
+          >
+            {downloading ? 'Downloading...' : 'Download Compressed'}
           </Button>
         )}
       </Box>
